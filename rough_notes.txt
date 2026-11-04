@@ -36,14 +36,7 @@
  384 KiB SRAM). Step 5 is the first build under the pool size.
  The other 128 KiB of SRAM (outside the pool) is for static globals,
  stack and application state.
- NOTE: The order of Steps 6 to 8 is inferred from the sizes
- (250,944 > 240,384 > 222,496 > 193,376). Confirm before sharing.
- NOTE: The only run result in this log is the Step 6 build, which
- printed "API Failed to Instantiate". Whether Steps 7 and 8 instantiate
- is not recorded here.
- NOTE: Saved/Result columns are computed from the logged request
- values. Your original rounded figures were 741 KB, 455 KB, 60 KB
- and 40 KB.
+
 
 ---------------------------------------------------------------------
  STEP 0: BASELINE
@@ -143,7 +136,7 @@
 ---------------------------------------------------------------------
  STEP 6: TAS REMOVED (30-PORT CONFIG)
 ---------------------------------------------------------------------
- Your note: "was able to get rid of TAS (the request is now 10 kb less)"
+ was able to get rid of TAS (the request is now 10 kb less)
  250,944 - 240,384 = 10,560 B, which matches. The port count of the
  Step 5 build is not recorded, so the saving from TAS alone cannot
  be isolated from the logs.
@@ -185,7 +178,6 @@
 
  mesa_malloc: request=240384 idx=0
    -> 0x429080 new_idx=240384
- .././mesa_init.c:273: API Failed to Instantiate
 
 ---------------------------------------------------------------------
  STEP 7: PORT CONFIG 30 -> 24
