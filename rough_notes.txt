@@ -2,8 +2,9 @@
  vtss_state_t HEAP REDUCTION LOG
  struct: vtss_state_t   (base/ail/vtss_state.h)
  feature flags:         include/vtss/api/options.h
- Heap pool on target:   524288 B (512 KB)
- MCU target:            64 KB to 128 KB
+ SRAM on target:       393216 B (384 KiB), SAMV71
+ MCU heap target:       64 KiB to 128 KiB
+
 =====================================================================
 
 ---------------------------------------------------------------------
@@ -19,9 +20,13 @@
   5    Light build + reduced VLAN size      -40,320     250,944
 
  Total saved:      3,619,360 B  (93.5%)
- Final size:       250,944 B  (~245 KB, 47.9% of the 512 KB heap)
- Still to cut:     ~123 KB to reach 128 KB ceiling; ~187 KB to reach 64 KB
+ Final size:       250,944 B  (~245 KiB, 63.8% of the 384 KiB SRAM)
+ Still to cut:     119,872 B (~117 KiB) to reach 128 KiB ceiling
+                   185,408 B (~181 KiB) to reach 64 KiB
 
+ NOTE: Steps 0-3 all exceed 393,216 B (384 KiB), so none of them
+ could have been allocated on the target. Steps 4 and 5 fit, but
+ use most of the SRAM on their own.
 ---------------------------------------------------------------------
  STEP 0: BASELINE
 ---------------------------------------------------------------------
