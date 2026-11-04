@@ -1,0 +1,144 @@
+=====================================================================
+ vtss_state_t HEAP REDUCTION LOG
+ struct: vtss_state_t   (base/ail/vtss_state.h)
+ feature flags:         include/vtss/api/options.h
+ Heap pool on target:   524288 B (512 KB)
+ MCU target:            64 KB to 128 KB
+=====================================================================
+
+---------------------------------------------------------------------
+ SUMMARY (all values = mesa_malloc request, bytes)
+---------------------------------------------------------------------
+ Step  Change                               Saved       Result
+ ----  -----------------------------------  ----------  ----------
+  0    Baseline (full build)                -           3,870,304
+  1    VTSS_VIDS 4096 -> 64                 -741,888    3,128,416
+  2    VTSS_MAC_ADDRS 16384 -> 128          -455,680    2,672,736
+  3    Port count = 24                      -60,000     2,612,736
+  4    Light build (VTSS_OPT_LIGHT)         -2,321,472  291,264
+  5    Light build + reduced VLAN size      -40,320     250,944
+
+ Total saved:      3,619,360 B  (93.5%)
+ Final size:       250,944 B  (~245 KB, 47.9% of the 512 KB heap)
+ Still to cut:     ~123 KB to reach 128 KB ceiling; ~187 KB to reach 64 KB
+
+---------------------------------------------------------------------
+ STEP 0: BASELINE
+---------------------------------------------------------------------
+ sizeof(*vtss_state) = 3870296
+ mesa_malloc: request=3870304 (rounded up from 3870296)
+              idx=0 remaining=524288 heap=524288
+
+ Sub-state sizes:
+   TOTAL = 3870296
+   L2    = 2246944
+   L3    = 512760
+   VCAP  = 727416
+   TS    = 9976
+
+ Largest L2 members:
+   vlan_table   = 327680   vtss_vlan_entry_t vlan_table[VTSS_VIDS]
+                           (VTSS_VIDS = 4096, sizeof entry = 80)
+   mac_table    = 458752   vtss_mac_entry_t mac_table[VTSS_MAC_ADDRS]
+                           (VTSS_MAC_ADDRS = 16384, sizeof entry = 28)
+   mac_list_ptr = 512
+   pgid_table   = 84560
+   apvlan_table = 900
+   pvlan_table  = 900
+
+ Feature flags active (options.h):
+   VTSS_FEATURE_WARM_START    : unconditional
+   VTSS_FEATURE_MISC          : #if defined(VTSS_ARCH_LAN966X)
+   VTSS_FEATURE_PORT_CONTROL  : #if defined(VTSS_ARCH_LAN966X)
+   VTSS_FEATURE_QOS           : #if defined(VTSS_ARCH_LAN966X)
+   VTSS_FEATURE_HQOS          : #if !VTSS_OPT_LIGHT
+   VTSS_FEATURE_PACKET        : #if defined(VTSS_ARCH_JAGUAR_2)
+   VTSS_FEATURE_LAYER2        : #if defined(VTSS_ARCH_FA)
+   VTSS_FEATURE_LAYER3        : #if defined(VTSS_ARCH_FA)
+   VTSS_FEATURE_VCAP          : #if defined(VTSS_ARCH_FA)
+   VTSS_FEATURE_TIMESTAMP     : #if defined(VTSS_ARCH_FA)
+   VTSS_FEATURE_CLOCK         : #if defined(VTSS_CHIP_SERVAL_TP) || defined(VTSS_CHIP_SERVAL_TEP) || defined(VTSS_CHIP_SERVAL_TE10)
+   VTSS_FEATURE_VOP           : #if defined(VTSS_ARCH_JAGUAR_2)
+   VTSS_FEATURE_MRP           : #if !VTSS_OPT_LIGHT
+   VTSS_FEATURE_SYNCE         : #if !VTSS_OPT_LIGHT
+   VTSS_FEATURE_FAN           : #if !VTSS_OPT_LIGHT
+   VTSS_FEATURE_TEMP_SENSOR   : #if defined(VTSS_ARCH_LAN966X)
+   VTSS_FEATURE_EEE           : #if !VTSS_OPT_LIGHT
+   VTSS_FEATURE_AFI_SWC       : #if !defined(VTSS_OPT_FPGA) && !defined(VTSS_ARCH_LAIKA)
+   VTSS_FEATURE_REDBOX        : #if defined(VTSS_ARCH_LAN969X)
+
+---------------------------------------------------------------------
+ STEP 1: REDUCE VTSS_VIDS
+---------------------------------------------------------------------
+ VTSS_VIDS = 4096 -> 64
+ sizeof(vtss_vlan_entry_t) = 80
+ VTSS_MAC_ADDRS = 16384
+ sizeof(vtss_mac_entry_t) = 28
+ sizeof(*vtss_state) = 3128408
+ mesa_malloc: request=3128416 idx=0 remaining=524288 heap=524288
+
+ Saved: 741 KB   (3,870,304 - 3,128,416 = 741,888 B)
+
+---------------------------------------------------------------------
+ STEP 2: REDUCE VTSS_MAC_ADDRS
+---------------------------------------------------------------------
+ VTSS_MAC_ADDRS = 16384 -> 128
+ sizeof(vtss_mac_entry_t) = 28
+ sizeof(*vtss_state) = 2672728
+ mesa_malloc: request=2672736 idx=0 remaining=524288 heap=524288
+
+ Saved: 455 KB   (3,128,416 - 2,672,736 = 455,680 B)
+
+---------------------------------------------------------------------
+ STEP 3: REDUCE PORT COUNT
+---------------------------------------------------------------------
+ APP VTSS_PORTS            = 24
+ APP VTSS_PORT_ARRAY_SIZE  = 24
+ VTSS_PORT_COUNT           = 24
+ VTSS_OPT_PORT_COUNT       = 24
+ mesa_malloc: request=2612736
+
+ Saved: 60 KB   (2,672,736 - 2,612,736 = 60,000 B)
+
+---------------------------------------------------------------------
+ STEP 4: SWITCH TO LIGHT BUILD (VTSS_OPT_LIGHT)
+---------------------------------------------------------------------
+ mesa_malloc: request=291264 idx=291264 remaining=233024 heap=524288
+
+ ~290 KB: still too much for the MCU (target 64 KB to 128 KB)
+ Saved: 2,321,472 B  (2,612,736 - 291,264)
+
+---------------------------------------------------------------------
+ STEP 5: REDUCE VLAN SIZE ON LIGHT BUILD
+---------------------------------------------------------------------
+ mesa_malloc: request=250944 idx=0 remaining=524288 heap=524288
+   -> 0x42ba60 new_idx=250944
+
+ Saved: ~40 KB   (291,264 - 250,944 = 40,320 B). Small gain on light.
+
+---------------------------------------------------------------------
+ DERIVED OBSERVATIONS (calculated from the numbers above)
+---------------------------------------------------------------------
+ - Sub-states listed (L2+L3+VCAP+TS) = 3,497,096 B, so ~373,200 B
+   (misc, port, qos, hqos, etc.) is not broken out in the log.
+ - Step 1 saved 741,888 B, but vlan_table alone shrinks by only
+   322,560 B (4096*80 -> 64*80). The other ~419 KB came from other
+   tables sized by VTSS_VIDS (not yet identified).
+ - Step 2: mac_table shrinks by 455,168 B (16384*28 -> 128*28);
+   the remaining 512 B matches the mac_list_ptr size.
+ - Next step: per-member sizeof breakdown of the light build to
+   find what makes up the remaining 250,944 B.
+
+=====================================================================
+ vtss_state_t layout reference (feature-gated members)
+=====================================================================
+ Always present: cookie, arch, create, init_conf, restart flags,
+   chip_count, chip_no, port_count, sys_config, txt_buf[256], app_data
+ Gated by VTSS_FEATURE_*: MISC, PORT_CONTROL, QOS, HQOS, PACKET,
+   LAYER2 (l2), LAYER3 (l3), VCAP, TIMESTAMP (ts), CLOCK, VOP (oam),
+   MRP, SYNCE, FAN, TEMP_SENSOR, EEE, AFI_SWC
+ Arch FA only: vtss_features[], reg_* offset pointers, chip_const,
+   taxi_delay[VTSS_REDBOX_CNT] (if REDBOX)
+ L2 members sized by VTSS_VIDS / VTSS_MAC_ADDRS / VTSS_PORT_ARRAY_SIZE:
+   vlan_table, mac_table, mac_list_ptr, pgid_table, apvlan_table,
+   pvlan_table, plus many per-port arrays
