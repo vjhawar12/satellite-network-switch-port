@@ -18,15 +18,19 @@
   3    Port count = 24                      -60,000     2,612,736
   4    Light build (VTSS_OPT_LIGHT)         -2,321,472  291,264
   5    Light build + reduced VLAN size      -40,320     250,944
+  6    Later trimmed build (see Step 6)     -57,568     193,376
 
- Total saved:      3,619,360 B  (93.5%)
- Final size:       250,944 B  (~245 KiB, 63.8% of the 384 KiB SRAM)
- Still to cut:     119,872 B (~117 KiB) to reach 128 KiB ceiling
-                   185,408 B (~181 KiB) to reach 64 KiB
+ Total saved:      3,676,928 B  (95.0%)
+ Final size:       193,376 B  (193.4 kB = 188.8 KiB; 49.2% of the 384 KiB SRAM)
+ Still to cut:     62,304 B (~60.8 KiB) to reach 128 KiB ceiling
+                   127,840 B (~124.8 KiB) to reach 64 KiB
 
  NOTE: Steps 0-3 all exceed 393,216 B (384 KiB), so none of them
- could have been allocated on the target. Steps 4 and 5 fit, but
- use most of the SRAM on their own.
+ could have been allocated on the target. Steps 4, 5 and 6 fit;
+ step 6 alone uses 49.2% of the SRAM, before ~100 KB of static
+ MESA globals, stack and application state.
+
+
 ---------------------------------------------------------------------
  STEP 0: BASELINE
 ---------------------------------------------------------------------
@@ -122,6 +126,58 @@
  Saved: ~40 KB   (291,264 - 250,944 = 40,320 B). Small gain on light.
 
 ---------------------------------------------------------------------
+ STEP 6: LATER TRIMMED BUILD (193 KB)
+---------------------------------------------------------------------
+ NOTE: The log does not record which source/config changes were made
+ between Step 5 (250,944 B) and this build. Only the resulting
+ sizes were captured.
+
+ === MESA BUILD CONFIG ===
+ sizeof(BOOL)            = 1
+ VTSS_PORT_COUNT         = 30
+ VTSS_OPT_PORT_COUNT     = 24
+ VTSS_PORTS              = 24
+ VTSS_PORT_NO_START      = 0
+ VTSS_PORT_NO_END        = 24
+ VTSS_PORT_ARRAY_SIZE    = 24
+ VTSS_VIDS               = 64
+ VTSS_MAC_ADDRS          = 128
+ (APP VTSS_PORTS = 24, APP VTSS_PORT_ARRAY_SIZE = 24)
+
+ === STATE SIZE ===
+ vtss_state_t            = 193360
+   L2                    = 79576
+     vlan_table          = 640
+     mac_table           = 3584
+     mac_list_ptr        = 4
+     pgid_table          = 4644
+     apvlan_table        = 576
+     pvlan_table         = 576
+   L3                    = 1040
+   VCAP (vcap)           = 20536
+   TS                    = 7664
+   packet                = 1112
+   qos                   = 36784
+     qos.conf            = 636
+     qos.port_conf_old   = 496
+     qos.port_conf       = 11904
+     qos.lb_groups       = 160
+     qos.lb_set_grp_idx  = 9230
+   temp_sensor           = 2
+ sizeof(vtss_qos_port_conf_t) = 496
+
+ mesa_malloc: request=193376 idx=0 remaining=524288 heap=524288
+   -> 0x428f00 new_idx=193376
+
+ Result: 193,376 B request (sizeof 193,360 B + 16 B).
+ Saved vs Step 5: 57,568 B.  Saved vs baseline: 3,676,928 B (95.0%).
+
+ State size by sub-state (sizeof, bytes):
+   L2 79,576 (41.2%)   qos 36,784 (19.0%)   VCAP 20,536 (10.6%)
+   TS 7,664 (4.0%)     packet 1,112         L3 1,040
+   temp_sensor 2       other (derived) 46,646 (24.1%)
+
+---------------------------------------------------------------------
  DERIVED OBSERVATIONS (calculated from the numbers above)
 ---------------------------------------------------------------------
  - Sub-states listed (L2+L3+VCAP+TS) = 3,497,096 B, so ~373,200 B
@@ -131,8 +187,21 @@
    tables sized by VTSS_VIDS (not yet identified).
  - Step 2: mac_table shrinks by 455,168 B (16384*28 -> 128*28);
    the remaining 512 B matches the mac_list_ptr size.
- - Next step: per-member sizeof breakdown of the light build to
-   find what makes up the remaining 250,944 B.
+ - Step 6 cross-checks against earlier steps:
+     mac_table 3,584 B = 128 * 28 B           (matches Step 2 entry size)
+     qos.port_conf 11,904 B = 24 * 496 B      (24 ports, 496 B/port)
+     apvlan_table / pvlan_table 576 B = 24 * 24
+ - vlan_table is 640 B for 64 VIDs = 10 B/entry, versus 80 B/entry
+   at baseline. So vtss_vlan_entry_t itself shrank in the later build,
+   not just VTSS_VIDS. The change is not recorded in this log.
+ - mac_list_ptr dropped from 512 B (baseline) to 4 B.
+ - Sub-states in Step 6 sum to 146,714 B, so ~46,646 B (misc, port,
+   init_conf, etc.) is not broken out.
+ - VTSS_PORT_COUNT = 30 in Step 6 while VTSS_PORTS and
+   VTSS_OPT_PORT_COUNT are 24 (Step 3 log showed 24 for all). Worth
+   confirming which is intended.
+ - Largest remaining targets: L2 (79,576 B), qos (36,784 B), and
+   VCAP (20,536 B).
 
 =====================================================================
  vtss_state_t layout reference (feature-gated members)
