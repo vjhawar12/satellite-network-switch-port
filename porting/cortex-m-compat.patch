@@ -1,0 +1,13 @@
+diff --git a/utils/src/lm_utils_memset.c b/utils/src/lm_utils_memset.c
+index d3bbbdce..bc15bd3a 100644
+--- a/utils/src/lm_utils_memset.c
++++ b/utils/src/lm_utils_memset.c
+@@ -64,7 +64,7 @@ void *lmu_memset_(void *dst, int val, size_t count)
+ #if defined(LMU_OS_LINUX)
+     return memset(dst, val, count);
+ #else
+-#if defined(__arm__)
++#if defined(__arm__) && !(defined(__ARM_ARCH_PROFILE) && (__ARM_ARCH_PROFILE == 'M'))
+     return lmu_memset_arm(dst, val, count);
+ #elif defined(__aarch64__)
+     return lmu_memset_aarch64(dst, val, count);

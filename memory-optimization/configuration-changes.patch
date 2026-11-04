@@ -1,0 +1,70 @@
+diff --git a/include/vtss/api/options.h b/include/vtss/api/options.h
+index f61022cb..c10e317d 100644
+--- a/include/vtss/api/options.h
++++ b/include/vtss/api/options.h
+@@ -241,8 +241,11 @@
+ #define VTSS_FEATURE_QCL_KEY_INNER_TAG               /**< QoS: QoS Control Lists has inner         \
+                                                         tag */
+ #define VTSS_FEATURE_LAYER3                          /**< Layer 3 (routing) */
++// #undef VTSS_FEATURE_LAYER3 // custom addition
++
+ 
+ #define VTSS_FEATURE_QOS_TAS              /**< QoS: Time Aware Scheduling (802.1Qbv) */
++#undef VTSS_FEATURE_QOS_TAS
+ #define VTSS_FEATURE_VLAN_SVL             /**< Shared VLAN Learning */
+ #define VTSS_FEATURE_MAC_PORT_LEARN_LIMIT /**< MAC learning limit per port */
+ #define VTSS_FEATURE_ACL                  /**< Access Control Lists */
+@@ -372,6 +375,8 @@
+ #define VTSS_FEATURE_SERDES_PRBS_TEST       /**< PRBS test for SerDes */
+ #define VTSS_FEATURE_QOS_TAS_LIST_LINKED    /**< QoS: Time Aware Scheduling list                   \
+                                                elements are linked */
++#undef VTSS_FEATURE_QOS_TAS_LIST_LINKED // custom addition
++
+ #define VTSS_FEATURE_ACL_EXT_ETYPE          /**< ACL Ethernet Type extended rules with             \
+                                                MAC address matching */
+ #define VTSS_FEATURE_REDBOX                 /**< PRP/HSR RedBox */
+diff --git a/include/vtss/api/types.h b/include/vtss/api/types.h
+index 6325f591..a615c3da 100644
+--- a/include/vtss/api/types.h
++++ b/include/vtss/api/types.h
+@@ -65,7 +65,8 @@ extern "C" {
+ #endif
+ 
+ /** \brief Error code type */
+-typedef int vtss_rc;
++// typedef int vtss_rc;
++typedef i32 vtss_rc;
+ 
+ /** \brief Error codes */
+ enum {
+@@ -659,7 +660,7 @@ typedef u16 vtss_vid_t; /* 0-4095 */
+ #define VTSS_VID_NULL     ((const vtss_vid_t)0)      /**< NULL VLAN ID */
+ #define VTSS_VID_DEFAULT  ((const vtss_vid_t)1)      /**< Default VLAN ID */
+ #define VTSS_VID_RESERVED ((const vtss_vid_t)0xFFF)  /**< Reserved VLAN ID */
+-#define VTSS_VIDS         ((const vtss_vid_t)4096)   /**< Number of VLAN IDs */
++#define VTSS_VIDS         ((const vtss_vid_t)64)   /**< Number of VLAN IDs */
+ #define VTSS_VID_ALL      ((const vtss_vid_t)0x1000) /**< Untagged VID: All VLAN IDs */
+ #endif                                               // _VTSS_MAIN_TYPES_H_
+ 
+diff --git a/include/vtss_l3_api.h b/include/vtss_l3_api.h
+index f3f09825..a3c486cb 100644
+--- a/include/vtss_l3_api.h
++++ b/include/vtss_l3_api.h
+@@ -147,8 +147,10 @@
+ // SparX-5 has 10 super VCAP blocks, each with 256 rows of 12 entries (52 bits
+ // each). This means that a single block will give us 256*12 = 3072 entries.
+ #if VTSS_OPT_LIGHT
+-#define VTSS_RLEG_CNT   32U  /**< Length of RLEG table */
+-#define VTSS_LPM_CNT    128U /**< Length of LPM table */
++#define VTSS_RLEG_CNT 1U
++#define VTSS_LPM_CNT 1U
++// #define VTSS_RLEG_CNT   32U  /**< Length of RLEG table */
++// #define VTSS_LPM_CNT    128U /**< Length of LPM table */
+ #define VTSS_ARP_CNT    0U   /**< Length of ARP table */
+ #define VTSS_LPM_MC_CNT 0U   /**< Length of LPM table for multicast entries */
+ #define VTSS_MC_TBL_CNT 0U   /**< Length of MC RLEG bit-mask table */
+@@ -549,3 +551,4 @@ vtss_rc vtss_l3_counters_rleg_clear(const vtss_inst_t inst, const vtss_vid_t vla
+ #endif
+ #endif /* VTSS_FEATURE_LAYER3 */
+ #endif /* VTSS_L3_API_H */
++

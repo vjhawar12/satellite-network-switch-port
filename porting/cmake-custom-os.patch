@@ -1,0 +1,60 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1a99c2e2..cd5fc8dc 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -10,13 +10,14 @@ include(.cmake/common.cmake)
+ 
+ option(BUILD_ALL         "Enable all" OFF)
+ option(BUILD_STATIC_LIBS "Build static versions of the libraries" ON)
+-option(BUILD_SHARED_LIBS "Build shared versions of the libraries" ON)
++option(BUILD_SHARED_LIBS "Build shared versions of the libraries" OFF)
+ option(BUILD_MESA_ALL    "Build the MESA libraries" OFF)
+ option(BUILD_DOXYGEN     "Build doxygen" OFF)
+ option(MESA_PRE_AG       "Use pre-generated mesa-ag layer if exist" ON)
+-option(BUILD_MESA_DEMO   "Build the MESA demo" ON)
+-option(MESA_OPSYS_LINUX  "Build the MESA for Linux" ON)
++option(BUILD_MESA_DEMO   "Build the MESA demo" OFF)
++option(MESA_OPSYS_LINUX  "Build the MESA for Linux" OFF)
+ option(MESA_OPSYS_VELOCITYSP "Build the MESA for VelocitySP" OFF)
++option(MESA_OS_CUSTOM "Build the MESA for baremetal" ON)
+ option(MESA_WRAP         "Generate and build the MESA Wrapper" ON)
+ option(MESA_USE_INLINE_UTILS "Use the inline version of the utils library" ON)
+ 
+@@ -24,7 +25,7 @@ mark_as_advanced(BUILD_MESA_DEMO MESA_PRE_AG BUILD_DOXYGEN)
+ 
+ include(.cmake/doxygen.cmake)
+ 
+-if (${MESA_OPSYS_LINUX})
++if (${MESA_OPSYS_LINUX} OR ${MESA_OS_CUSTOM})
+     add_definitions(-DLMU_BOOL_IS_UINT8)
+ endif()
+ 
+@@ -42,7 +43,7 @@ include_directories(meba/include)
+ include_directories(mepa/include)
+ 
+ set (OS_CNT 0)
+-if (${MESA_OPSYS_LINUX})
++if (${MESA_OPSYS_LINUX} OR ${MESA_OS_CUSTOM})
+     MATH(EXPR OS_CNT "${OS_CNT} + 1")
+ endif ()
+ 
+@@ -192,6 +193,8 @@ if (${MESA_OPSYS_LINUX})
+     set(GLOBAL_DEFS -DVTSS_OPSYS_LINUX -DVTSS_OPT_SYMREG=1)
+ elseif (${MESA_OPSYS_VELOCITYSP})
+     set(GLOBAL_DEFS -DVTSS_OPSYS_VELOCITYSP)
++elseif (${MESA_OS_CUSTOM})
++    set(GLOBAL_DEFS -DVTSS_OS_CUSTOM -DVTSS_OPT_SYMREG=1)
+ endif ()
+ 
+ set(mesa_active_target )
+@@ -303,8 +306,8 @@ API_TARGET(LIB vsc7558MSEC           CHIP 7558TSN       DEFS -DVTSS_OPT_PORT_COU
+ API_TARGET(LIB lan966x               CHIP 966X)
+ API_TARGET(LIB lan966x_lm            CHIP 966X          DEFS -DVTSS_OPT_LIGHT=1 -DVTSS_OPT_TRACE=1)
+ API_TARGET(LIB lan9698RED            CHIP 969X          DEFS -DVTSS_OPT_PORT_COUNT=30)
+-API_TARGET(LIB lan969x               CHIP 969X          DEFS -DVTSS_OPT_PORT_COUNT=30)
+-API_TARGET(LIB lan969x_lm            CHIP 969X          DEFS -DVTSS_OPT_PORT_COUNT=30 -DVTSS_OPT_LIGHT=1 -DVTSS_OPT_TRACE=0 -DVTSS_OPT_TRACE_ERROR=0)
++API_TARGET(LIB lan969x               CHIP 969X          DEFS -DVTSS_OPT_PORT_COUNT=30 -DVTSS_OPT_TRACE=1)
++API_TARGET(LIB lan969x_lm            CHIP 969X          DEFS -DVTSS_OPT_PORT_COUNT=24 -DVTSS_OPT_LIGHT=1 -DVTSS_OPT_TRACE=0 -DVTSS_OPT_TRACE_ERROR=0)
+ API_TARGET(LIB p64h_lm               CHIP P64H          DEFS -DVTSS_OPT_LIGHT=1)
+ API_TARGET(LIB p64h                  CHIP P64H)
+ 

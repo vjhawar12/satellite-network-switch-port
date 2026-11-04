@@ -1,0 +1,12 @@
+# Avoid accidentally uploading the vendor SDK, firmware, local build outputs, or logs.
+build*/
+*.o
+*.a
+*.elf
+*.map
+*.bin
+*.hex
+*.log
+*.zip
+mesa_trimmed/
+.DS_Store
