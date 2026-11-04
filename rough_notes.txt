@@ -2,41 +2,55 @@
  vtss_state_t HEAP REDUCTION LOG
  struct: vtss_state_t   (base/ail/vtss_state.h)
  feature flags:         include/vtss/api/options.h
- SRAM on target:       393216 B (384 KiB), SAMV71
- MCU heap target:       64 KiB to 128 KiB
-
+ Total SRAM (SAMV71):   393216 B (384 KiB)
+ Heap pool:             262144 B (256 KiB)
+ GOAL:   reduce the vtss_state_t heap request to fit the 256 KiB pool
+ RESULT: 193,376 B (188.8 KiB) = 73.8% of the pool, reached at Step 8
+ (Allocator pool fields "remaining=" and "heap=" are omitted from the
+  raw mesa_malloc lines below. Only the request sizes are used here.)
 =====================================================================
 
 ---------------------------------------------------------------------
  SUMMARY (all values = mesa_malloc request, bytes)
 ---------------------------------------------------------------------
- Step  Change                               Saved       Result
- ----  -----------------------------------  ----------  ----------
-  0    Baseline (full build)                -           3,870,304
-  1    VTSS_VIDS 4096 -> 64                 -741,888    3,128,416
-  2    VTSS_MAC_ADDRS 16384 -> 128          -455,680    2,672,736
-  3    Port count = 24                      -60,000     2,612,736
-  4    Light build (VTSS_OPT_LIGHT)         -2,321,472  291,264
-  5    Light build + reduced VLAN size      -40,320     250,944
-  6    Later trimmed build (see Step 6)     -57,568     193,376
+ Step  Change                          Saved       Result     % of pool  Fits 256 KiB?
+ ----  ------------------------------  ----------  ---------  ---------  -------------
+  0    Baseline (full build)           -           3,870,304  1476%      no
+  1    VTSS_VIDS 4096 -> 64            -741,888    3,128,416  1193%      no
+  2    VTSS_MAC_ADDRS 16384 -> 128     -455,680    2,672,736  1020%      no
+  3    Port count = 24                 -60,000     2,612,736  997%       no
+  4    Light build (VTSS_OPT_LIGHT)    -2,321,472  291,264    111.1%     no
+  5    Light build + reduced VLAN      -40,320     250,944    95.7%      yes
+  6    TAS removed (30-port config)    -10,560     240,384    91.7%      yes
+  7    Port config 30 -> 24            -17,888     222,496    84.9%      yes
+  8    L3 + VCAP trimmed               -29,120     193,376    73.8%      yes
 
  Total saved:      3,676,928 B  (95.0%)
- Final size:       193,376 B  (193.4 kB = 188.8 KiB; 49.2% of the 384 KiB SRAM)
- Still to cut:     62,304 B (~60.8 KiB) to reach 128 KiB ceiling
-                   127,840 B (~124.8 KiB) to reach 64 KiB
+ Final size:       193,376 B  (193.4 kB = 188.8 KiB)
+ Pool usage:       73.8% of the 256 KiB pool (262,144 B)
+ Pool headroom:    68,768 B (67.2 KiB)
+ Total SRAM:       49.2% of the 384 KiB SRAM (393,216 B)
 
- NOTE: Steps 0-3 all exceed 393,216 B (384 KiB), so none of them
- could have been allocated on the target. Steps 4, 5 and 6 fit;
- step 6 alone uses 49.2% of the SRAM, before ~100 KB of static
- MESA globals, stack and application state.
-
+ NOTE: Steps 0 to 4 exceed the 262,144 B pool, so none of them could
+ have been allocated from it (Steps 0 to 3 also exceed the whole
+ 384 KiB SRAM). Step 5 is the first build under the pool size.
+ The other 128 KiB of SRAM (outside the pool) is for static globals,
+ stack and application state.
+ NOTE: The order of Steps 6 to 8 is inferred from the sizes
+ (250,944 > 240,384 > 222,496 > 193,376). Confirm before sharing.
+ NOTE: The only run result in this log is the Step 6 build, which
+ printed "API Failed to Instantiate". Whether Steps 7 and 8 instantiate
+ is not recorded here.
+ NOTE: Saved/Result columns are computed from the logged request
+ values. Your original rounded figures were 741 KB, 455 KB, 60 KB
+ and 40 KB.
 
 ---------------------------------------------------------------------
  STEP 0: BASELINE
 ---------------------------------------------------------------------
  sizeof(*vtss_state) = 3870296
  mesa_malloc: request=3870304 (rounded up from 3870296)
-              idx=0 remaining=524288 heap=524288
+              idx=0
 
  Sub-state sizes:
    TOTAL = 3870296
@@ -84,7 +98,7 @@
  VTSS_MAC_ADDRS = 16384
  sizeof(vtss_mac_entry_t) = 28
  sizeof(*vtss_state) = 3128408
- mesa_malloc: request=3128416 idx=0 remaining=524288 heap=524288
+ mesa_malloc: request=3128416 idx=0
 
  Saved: 741 KB   (3,870,304 - 3,128,416 = 741,888 B)
 
@@ -94,7 +108,7 @@
  VTSS_MAC_ADDRS = 16384 -> 128
  sizeof(vtss_mac_entry_t) = 28
  sizeof(*vtss_state) = 2672728
- mesa_malloc: request=2672736 idx=0 remaining=524288 heap=524288
+ mesa_malloc: request=2672736 idx=0
 
  Saved: 455 KB   (3,128,416 - 2,672,736 = 455,680 B)
 
@@ -112,24 +126,112 @@
 ---------------------------------------------------------------------
  STEP 4: SWITCH TO LIGHT BUILD (VTSS_OPT_LIGHT)
 ---------------------------------------------------------------------
- mesa_malloc: request=291264 idx=291264 remaining=233024 heap=524288
+ mesa_malloc: request=291264 idx=291264
 
- ~290 KB: still too much for the MCU (target 64 KB to 128 KB)
+ ~290 KB: still 29,120 B over the 256 KiB (262,144 B) pool
  Saved: 2,321,472 B  (2,612,736 - 291,264)
 
 ---------------------------------------------------------------------
  STEP 5: REDUCE VLAN SIZE ON LIGHT BUILD
 ---------------------------------------------------------------------
- mesa_malloc: request=250944 idx=0 remaining=524288 heap=524288
+ mesa_malloc: request=250944 idx=0
    -> 0x42ba60 new_idx=250944
 
  Saved: ~40 KB   (291,264 - 250,944 = 40,320 B). Small gain on light.
+ First build under the pool: 250,944 B = 95.7% of 262,144 B.
 
 ---------------------------------------------------------------------
- STEP 6: LATER TRIMMED BUILD (193 KB)
+ STEP 6: TAS REMOVED (30-PORT CONFIG)
 ---------------------------------------------------------------------
- NOTE: The log does not record which source/config changes were made
- between Step 5 (250,944 B) and this build. Only the resulting
+ Your note: "was able to get rid of TAS (the request is now 10 kb less)"
+ 250,944 - 240,384 = 10,560 B, which matches. The port count of the
+ Step 5 build is not recorded, so the saving from TAS alone cannot
+ be isolated from the logs.
+
+ APP VTSS_PORTS           = 24
+ APP VTSS_PORT_ARRAY_SIZE = 24
+ === MESA BUILD CONFIG ===
+ sizeof(BOOL)            = 1
+ VTSS_PORT_COUNT         = 30
+ VTSS_OPT_PORT_COUNT     = 30
+ VTSS_PORTS              = 30
+ VTSS_PORT_NO_START      = 0
+ VTSS_PORT_NO_END        = 30
+ VTSS_PORT_ARRAY_SIZE    = 30
+ VTSS_VIDS               = 64
+ VTSS_MAC_ADDRS          = 128
+
+ === STATE SIZE ===
+ vtss_state_t            = 240376
+   L2                    = 81416
+     vlan_table          = 640
+     mac_table           = 3584
+     mac_list_ptr        = 4
+     pgid_table          = 5160
+     apvlan_table        = 900
+     pvlan_table         = 900
+   L3                    = 23048
+   VCAP (vcap)           = 28280
+   TS                    = 9440
+   packet                = 1304
+   qos                   = 39832
+     qos.conf            = 636
+     qos.port_conf_old   = 496
+     qos.port_conf       = 14880
+     qos.lb_groups       = 160
+     qos.lb_set_grp_idx  = 9230
+   temp_sensor           = 2
+ sizeof(vtss_qos_port_conf_t) = 496
+
+ mesa_malloc: request=240384 idx=0
+   -> 0x429080 new_idx=240384
+ .././mesa_init.c:273: API Failed to Instantiate
+
+---------------------------------------------------------------------
+ STEP 7: PORT CONFIG 30 -> 24
+---------------------------------------------------------------------
+ sizeof(BOOL)            = 1
+ VTSS_PORT_COUNT         = 30
+ VTSS_OPT_PORT_COUNT     = 24
+ VTSS_PORTS              = 24
+ VTSS_PORT_NO_START      = 0
+ VTSS_PORT_NO_END        = 24
+ VTSS_PORT_ARRAY_SIZE    = 24
+ VTSS_VIDS               = 64
+ VTSS_MAC_ADDRS          = 128
+
+ === STATE SIZE ===
+ vtss_state_t            = 222480
+   L2                    = 79576
+     vlan_table          = 640
+     mac_table           = 3584
+     mac_list_ptr        = 4
+     pgid_table          = 4644
+     apvlan_table        = 576
+     pvlan_table         = 576
+   L3                    = 23048
+   VCAP (vcap)           = 27648
+   TS                    = 7664
+   packet                = 1112
+   qos                   = 36784
+     qos.conf            = 636
+     qos.port_conf_old   = 496
+     qos.port_conf       = 11904
+     qos.lb_groups       = 160
+     qos.lb_set_grp_idx  = 9230
+   temp_sensor           = 2
+ sizeof(vtss_qos_port_conf_t) = 496
+
+ mesa_malloc: request=222496 idx=0
+   -> 0x429080 new_idx=222496
+
+ Saved vs Step 6: 17,888 B.
+
+---------------------------------------------------------------------
+ STEP 8: LATER TRIMMED BUILD (193 KB)
+---------------------------------------------------------------------
+ NOTE: The log does not record which source/config flags removed
+ the L3 content or trimmed VCAP in this build. Only the resulting
  sizes were captured.
 
  === MESA BUILD CONFIG ===
@@ -166,11 +268,13 @@
    temp_sensor           = 2
  sizeof(vtss_qos_port_conf_t) = 496
 
- mesa_malloc: request=193376 idx=0 remaining=524288 heap=524288
+ mesa_malloc: request=193376 idx=0
    -> 0x428f00 new_idx=193376
 
  Result: 193,376 B request (sizeof 193,360 B + 16 B).
- Saved vs Step 5: 57,568 B.  Saved vs baseline: 3,676,928 B (95.0%).
+ Saved vs Step 7: 29,120 B.  Saved vs Step 5: 57,568 B.
+ Saved vs baseline: 3,676,928 B (95.0%).
+ Pool: 193,376 B = 73.8% of 262,144 B (68,768 B headroom).
 
  State size by sub-state (sizeof, bytes):
    L2 79,576 (41.2%)   qos 36,784 (19.0%)   VCAP 20,536 (10.6%)
@@ -187,7 +291,19 @@
    tables sized by VTSS_VIDS (not yet identified).
  - Step 2: mac_table shrinks by 455,168 B (16384*28 -> 128*28);
    the remaining 512 B matches the mac_list_ptr size.
- - Step 6 cross-checks against earlier steps:
+ - Steps 5 to 8 reconcile exactly: 10,560 + 17,888 + 29,120 = 57,568 B.
+ - Step 6 -> 7 (30 -> 24 ports): L2 -1,840, qos -3,048, TS -1,776,
+   VCAP -632, packet -192, unlisted -10,408 (port-dependent state not
+   broken out in the log), total vtss_state_t -17,896. The request
+   drops by 17,888 because allocator padding is 8 B at Step 6 and
+   16 B at Step 7.
+ - Step 7 -> 8: L3 23,048 -> 1,040 (-22,008) and VCAP 27,648 -> 20,536
+   (-7,112) account for the entire 29,120 B drop. Every other
+   sub-state is unchanged.
+ - Not recorded in the logs: the flags/source changes that removed TAS,
+   the L3 content and the VCAP entries, which build reached
+   mesa_port_map_set(), and whether Steps 7 and 8 instantiate.
+ - Step 8 cross-checks against earlier steps:
      mac_table 3,584 B = 128 * 28 B           (matches Step 2 entry size)
      qos.port_conf 11,904 B = 24 * 496 B      (24 ports, 496 B/port)
      apvlan_table / pvlan_table 576 B = 24 * 24
@@ -195,11 +311,13 @@
    at baseline. So vtss_vlan_entry_t itself shrank in the later build,
    not just VTSS_VIDS. The change is not recorded in this log.
  - mac_list_ptr dropped from 512 B (baseline) to 4 B.
- - Sub-states in Step 6 sum to 146,714 B, so ~46,646 B (misc, port,
-   init_conf, etc.) is not broken out.
- - VTSS_PORT_COUNT = 30 in Step 6 while VTSS_PORTS and
-   VTSS_OPT_PORT_COUNT are 24 (Step 3 log showed 24 for all). Worth
-   confirming which is intended.
+ - Sub-states in Step 8 sum to 146,714 B, so ~46,646 B (misc, port,
+   init_conf, etc.) is not broken out. In Step 6 the unlisted share
+   is 57,054 B.
+ - VTSS_PORT_COUNT = 30 in Steps 6 to 8. VTSS_PORTS and
+   VTSS_OPT_PORT_COUNT are 30 in Step 6 but 24 in Steps 7 and 8
+   (Step 3 log showed 24 for all). Worth confirming which is
+   intended for the SAMV71 build.
  - Largest remaining targets: L2 (79,576 B), qos (36,784 B), and
    VCAP (20,536 B).
 
