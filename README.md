@@ -12,7 +12,7 @@ I led the bare-metal adaptation of a Linux-oriented MESA Ethernet-switch softwar
 
 - **[Four-page engineering portfolio (PDF)](portfolio/satellite-mesa-baremetal.pdf)** — system context, implementation ownership, profiling methodology, measured results and architectural tradeoff.
 - **[Bare-metal porting artifacts](porting/)** — custom OS header, ARM cross-compilation toolchain, CMake patches and build commands.
-- **[Runtime allocation notes](memory-optimization/rough_notes.txt)** — unmodified original record of eight successive profiling stages and final 193,376 B request.
+- **[Runtime allocation notes](memory-optimization/rough_notes.txt)** — A cleaned-up version of the actual rough notes I made while memory profiling through eight successive stages and final 193,376 B request.
 - **[Memory analysis and configuration diff](memory-optimization/optimization-changes.md)** — explains capacity reductions and why the full system remained constrained.
 
 ## My contributions
