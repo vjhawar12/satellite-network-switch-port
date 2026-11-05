@@ -30,6 +30,10 @@ I led the bare-metal adaptation of a Linux-oriented MESA Ethernet-switch softwar
 - **Historical code sample.** The archived custom OS header includes an unimplemented DMA conversion hook; it is not presented as a production-ready driver.
 - **Provenance.** Upstream MESA code and headers originate with Microchip. Vendor-file changes are represented as focused patches; see [`LICENSES/upstream-notices.txt`](LICENSES/upstream-notices.txt). Company/customer details and proprietary board schematics are intentionally excluded. Public use of employer-related material is subject to authorization.
 
+## Notes
+
+Another engineer profiled static MESA data (.data + .bss) at about 100 KB. I did not independently verify this figure, and it may reflect a different MESA version or build configuration.
+
 ## File map
 
 ```text
